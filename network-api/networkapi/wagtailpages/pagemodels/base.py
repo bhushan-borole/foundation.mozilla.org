@@ -1,5 +1,7 @@
-from django.db import models
+from django.core.exceptions import ValidationError
 from django.conf import settings
+from django.db import models
+from django.forms.utils import ErrorList
 
 from wagtail.admin.edit_handlers import FieldPanel, FieldRowPanel, InlinePanel, MultiFieldPanel
 from wagtail.core.models import Page, Orderable as WagtailOrderable
@@ -438,6 +440,47 @@ class ParticipateHighlights2(ParticipateHighlightsBase):
     )
 
 
+class HomepageTakeActionCards(WagtailOrderable, models.Model):
+    page = ParentalKey(
+        'wagtailpages.Homepage',
+        related_name='take_action_cards',
+    )
+    image = models.ForeignKey(
+        'wagtailimages.Image',
+        null=True,
+        blank=False,
+        on_delete=models.SET_NULL,
+    )
+    text = models.CharField(max_length=255)
+    internal_link = models.ForeignKey(
+        'wagtailcore.Page',
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    external_link = models.URLField(blank=True, null=True)
+
+    panels = [
+        ImageChooserPanel('image'),
+        FieldPanel('text'),
+        PageChooserPanel('internal_link'),
+        FieldPanel('external_link'),
+    ]
+
+    @property
+    def link(self):
+        if self.internal_link:
+            return self.internal_link.url
+        return self.external_link
+
+    def clean(self):
+        # TODO add Orderable validation to make sure internal or external link is provided
+        super().clean()
+
+    class Meta:
+        verbose_name = "Take Action Card"
+
+
 class Homepage(FoundationMetadataPageMixin, Page):
     hero_headline = models.CharField(
         max_length=140,
@@ -468,6 +511,15 @@ class Homepage(FoundationMetadataPageMixin, Page):
         blank=True
     )
 
+    # Take Action Section
+    take_action_title = models.CharField(default='Take action', max_length=50)
+    signup_cta = models.ForeignKey(
+        'wagtailpages.Signup',
+        blank=False,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+
     content_panels = Page.content_panels + [
         MultiFieldPanel(
           [
@@ -485,6 +537,15 @@ class Homepage(FoundationMetadataPageMixin, Page):
         ),
         InlinePanel('featured_blogs', label='Blogs', max_num=4),
         InlinePanel('featured_highlights', label='Highlights', max_num=5),
+        MultiFieldPanel(
+            [
+                FieldPanel('take_action_title'),
+                SnippetChooserPanel('signup_cta'),
+                InlinePanel('take_action_cards', label='Take Action Cards', max_num=4),
+            ],
+            heading='Take Action Section',
+            classname='collapsible',
+        ),
     ]
 
     subpage_types = [

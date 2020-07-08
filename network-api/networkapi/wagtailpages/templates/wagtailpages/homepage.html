@@ -88,6 +88,29 @@
 </div>
 <div class="row">
   <div class="col">
+    <h2>{{ page.take_action_title }}</h2>
+
+    <div class="row">
+      {% for item in page.take_action_cards.all %}
+        <a href="{{ item.link }}" class="col" style='display: inline-block;'>
+          {% image item.image fill-400x200 as img %}
+          <img src="{{ img.url }}" alt="" />
+          <div>
+            {{ item.text }}
+          </div>
+        </a>
+      {% endfor %}
+
+      <div class="col">
+        Signup form goes here:
+        {{ page.signup_cta }}
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
     <hr class="hr-emphasis mb-5">
     <div class="row mb-5">
       <div class="col">
